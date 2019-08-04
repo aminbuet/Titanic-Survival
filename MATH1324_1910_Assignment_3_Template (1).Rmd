@@ -1,0 +1,180 @@
+---
+title: "Exploring Survival on the Titanic"
+author: "Md Aminur Rahman - s3795270"
+date: 'Last updated: Sunday, June 02, 2019'
+output:
+  slidy_presentation:
+    df_print: paged
+    font_adjustment: 0
+    highlight: haddock
+    mathjax: default
+  ioslides_presentation:
+    highlight: haddock
+  beamer_presentation:
+    highlight: haddock
+subtitle: Subtitle Comes Here
+---
+
+```{r setup, include=FALSE}
+# Use this chunk to quietly load your pacakges
+
+knitr::opts_chunk$set(
+	fig.align = "center",
+	message = FALSE,
+	warning = FALSE
+)
+# Packages loaded in this chunk will not appear in the presentation. 
+
+library(ggplot2) # Useful for creating plots
+library(dplyr)  # Useful for data maipulation
+library(knitr) # Useful for creating nice tables
+
+```
+
+
+
+# RPubs link information
+
+Rpubs link comes here: http://rpubs.com/aminbuet/titanic
+
+
+# Introduction
+ I have choosen TITANIC dataset from kaggle to analysis and investigate. The detalis of the datsets you can look at https://www.kaggle.com/mrisdal/exploring-survival-on-the-titanic/data
+
+# Problem Statement
+
+- Try to predict who is survived when it sank.
+- I use graph to clearly visulize the propability of survival.
+
+# Data
+
+-I downloaded data to my working directory fromfolllowing link https://www.kaggle.com/c/titanic/data
+```{r}
+# Setting working directory
+setwd("~/Documents/RMIT/Semester01/Statistics/Assignment3")
+
+# load Data
+train <- read.csv("~/Documents/RMIT/Semester01/Statistics/Assignment3/data/train.csv")
+test <- read.csv("~/Documents/RMIT/Semester01/Statistics/Assignment3/data/test.csv")
+
+# Combine two sets
+combined <- bind_rows(train, test)
+
+# Check data
+str(combined)
+```
+
+
+# Data Cont.
+
+We've got a sense of our variables, their class type, and the first few observations of each. We know we're working with 1309 observations of 12 variables. To make things a bit more explicit since a couple of the variable names aren't 100% illuminating, here's what we've got to deal with:
+
+Variable Name | Description
+--------------|-------------
+Survived      | Survived (1) or died (0)
+Pclass        | Passenger's class
+Name          | Passenger's name
+Sex           | Passenger's sex
+Age           | Passenger's age
+SibSp         | Number of siblings/spouses aboard
+Parch         | Number of parents/children aboard
+Ticket        | Ticket number
+Fare          | Fare
+Cabin         | Cabin
+Embarked      | Port of embarkation
+
+# Descriptive Statistics and Visualisation
+
+```{r}
+# How many survived?
+barplot(table(train$Survived),
+        names.arg = c("Perished", "Survived"),
+        main="Survived (passenger fate)", col="black")
+```
+```{r}
+# Passengers travelling in different classes
+barplot(table(train$Pclass), 
+        names.arg = c("first", "second", "third"),
+        main="Pclass (passenger traveling class)", col="firebrick")
+```
+```{r}
+# How many survived gender-wise?
+barplot(table(train$Sex), main="Sex (gender)", col="darkviolet")
+```
+```{r}
+# Age distribution in the Titanic
+hist(train$Age, main="Age", xlab = NULL, col="brown")
+```
+```{r}
+# How in group people (sibling+spouse) were traveling?
+barplot(table(train$SibSp), main="SibSp (siblings + spouse aboard)", col="darkblue")
+```
+```{r}
+# How parents and children were traveling? 
+barplot(table(train$Parch), main="Parch (parents + kids aboard)", col="gray50")
+```
+```{r}
+# What was the fair most people paid for Titanic?
+hist(train$Fare, main="Fare (fee paid for ticket[s])", xlab = NULL, col="darkgreen")
+```
+```{r}
+# Where most people Embarked?
+barplot(table(train$Embarked), names= c("Missing", "Cherbourg", "Queenstown", "Southampton"), 
+        main="Port of Embarkation")
+```
+
+# Decsriptive Statistics Cont.
+
+- You can use the `knitr:kable` function to print nice HTML tables. Here is an example R code:
+
+```{r}
+combined %>% group_by(Sex) %>% summarise(Min = min(Age,na.rm = TRUE),
+                                           Q1 = quantile(Age,probs = .25,na.rm = TRUE),
+                                           Median = median(Age, na.rm = TRUE),
+                                           Q3 = quantile(Age,probs = .75,na.rm = TRUE),
+                                           Max = max(Age,na.rm = TRUE),
+                                           Mean = mean(Age, na.rm = TRUE),
+                                           SD = sd(Age, na.rm = TRUE),
+                                           n = n(),
+                                           Missing = sum(is.na(Age))) -> table1
+knitr::kable(table1)
+```
+```{r}
+# Fill in Age NAs
+library(rpart)
+summary(combined$Age)
+
+FillAge <- rpart(Age ~ Pclass + Sex, 
+                data=combined[!is.na(combined$Age),], method="anova")
+combined$Age[is.na(combined$Age)] <- predict(FillAge, combined[is.na(combined$Age),])
+summary(combined)
+
+```
+
+
+# Hypothesis Testing
+
+- Apply an appropriate hypothesis test for your investigation. 
+- Ensure you state and check any assumptions. 
+- Report the appropriate values and interpret the results.
+- Here is an example:
+
+```{r}
+model1 <- lm(Age ~ Sex, data = combined)
+model1 %>% summary()
+```
+
+
+# Discussion
+
+The major findings of my investigatios are -
+- Most of the passengers were died.
+- More than half passengers were in #rd class , greater than (1st Classs + 2nd Class).
+- Male passengers were more.
+- Single passangers were more.
+- Most of the fare around $80.
+- Most of the passenger embarked from Southampton.
+
+# References
+
+ I read and try understand different from Kernels of kaggle, classnotes and course materials.
